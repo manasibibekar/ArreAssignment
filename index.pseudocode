@@ -1,0 +1,32 @@
+// schemas are present in schemas folder
+// following is pseudo-code for APIs
+
+// get paginated group messages
+listen to GET /groups/{groupId}?page={pageNum}&pagelen={pageLen} :
+    groupId := get from url
+    pageNum := get from url
+    pageLen := get from url
+
+    msgs := select "message", "from", "created_at" from "GroupMessages" table where groupId = groupId and {
+        startIndex: pageLen*(pageNum-1),
+        endIndex: pageLen*(pageNum-1) + pageLen
+    } populate "from" from "Users"
+
+    return msgs
+
+
+// create message in the group
+listen to POST /groups/{groupId} :
+    groupId := get from url
+    fromUserId := get from request body
+    message := get from request body
+    timestamp := get from request body
+
+    success := make transaction { 
+        messageId := insert into GroupMessages {
+            groupId: groupId, message: message, from: fromUserId, created_at: timestamp, updated_at: timestamp
+        }
+        update Groups where id = groupId messages.push(messageId)
+    }
+
+    return success ? success : error
